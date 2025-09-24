@@ -1,0 +1,12 @@
+services:
+  myDB:
+    image: postgres:16.4
+    container_name: hoon-nest
+    ports:
+      - 5442:5432
+    environment:
+      - POSTGRES_USER=hoon
+      - POSTGRES_PASSWORD=hoon
+      - POSTGRES_DB=hoon_db
+    volumes:
+      - ./postgres:/var/lib/postgresql/data

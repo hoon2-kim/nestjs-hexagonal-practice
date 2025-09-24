@@ -1,98 +1,78 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+## 헥사고날 아키텍처 (Hexagonal Architecture)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+이 프로젝트는 **헥사고날 아키텍처(Hexagonal Architecture)** 을 연습하기 위한 프로젝트입니다.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+### 아키텍처 구조
 
-## Description
+<div align="center">
+  <img src="./public/스크린샷%202025-09-17%20오전%201.22.01.png" alt="헥사고날 아키텍처 다이어그램" width="400" />
+</div>
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+이 다이어그램은 육각형 아키텍처의 핵심 원칙인 **의존성 역전(Dependency Inversion Principle)**을 보여줍니다. 안쪽 계층(도메인)은 바깥쪽 계층(인프라)에 의존하지 않고, 바깥쪽 계층이 안쪽 계층에 의존하는 구조입니다.
 
-## Project setup
+#### 한국어 구조 다이어그램
 
-```bash
-$ yarn install
+```
+🌐 외부 시스템들
+┌─────────────────────────────────────────────────────────┐
+│  HTTP  │ 메시지 브로커    │ REST API │ 이메일   │ 데이터베이스   │
+│        │ (RabbitMQ,      │         │ (SMTP,  │ (MySQL,       │
+│        │  Kafka,         │         │ SendGrid│ PostgreSQL,   │
+│        │  Bull Redis)    │         │ SES)    │ MongoDB)      │
+└────────┴─────────────────┴─────────┴─────────┴───────────────┘
+                        │
+🏗️ 인프라스트럭처 계층
+┌─────────────────────────────────────────────────────────┐
+│  🎮 컨트롤러  │  ✉️ 메시지 큐  │  🌐 REST     │  📧 메일   │
+│   (HTTP)     │   어댑터      │  클라이언트   │  어댑터    │
+└──────────────┴──────────────┴─────────────┴────────────┘
+┌─────────────────────────────────────────────────────────┐
+│              🗄️ 데이터 영속성 어댑터                     │
+└─────────────────────────────────────────────────────────┘
+                        │
+⚙️ 애플리케이션 계층
+┌─────────────────────────────────────────────────────────┐
+│                📄 사용 사례 (Use Cases)                 │
+└─────────────────────────────────────────────────────────┘
+                        │
+🏛️ 도메인 계층
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────┐
+│ 🏢 엔티티    │ │ ⚡ 이벤트    │ │ 📦 리포지토리│ │ 🛠️ 서비스 │
+│(Entities)   │ │ (Events)    │ │(Repositories)│ │(Services)│
+└─────────────┘ └─────────────┘ └─────────────┘ └─────────┘
 ```
 
-## Compile and run the project
+### 계층별 설명
 
-```bash
-# development
-$ yarn run start
+#### 1. **외부 시스템들 (External Systems)**
 
-# watch mode
-$ yarn run start:dev
+- **HTTP**: 웹 요청/응답 처리
+- **Message Broker**: 메시지 큐를 통한 비동기 통신 (RabbitMQ, Kafka, Bull Redis 등)
+- **REST API**: 외부 서비스와의 RESTful 통신
+- **이메일 서비스**: 이메일 전송 (SMTP, SendGrid, SES 등)
+- **데이터베이스**: 데이터 저장소 (MySQL, PostgreSQL, MongoDB 등)
 
-# production mode
-$ yarn run start:prod
-```
+#### 2. **인프라스트럭처 계층 (Infrastructure Layer)**
 
-## Run tests
+- **목적**: 외부 시스템과의 실제 상호작용을 담당하는 "어댑터"들이 위치하는 계층
+- **구성 요소**:
+  - **컨트롤러(Controllers)**: HTTP 요청을 받아 애플리케이션 계층으로 전달
+  - **메시지 큐 어댑터**: 메시지 브로커와의 통신을 처리 (RabbitMQ, Kafka, Bull Redis 등)
+  - **REST 클라이언트**: 외부 REST API를 호출하는 클라이언트
+  - **메일 어댑터**: 이메일 전송 기능을 구현 (SMTP, SendGrid, SES 등)
+  - **데이터 영속성 어댑터**: 데이터베이스와의 데이터 영속성을 관리 (MySQL, PostgreSQL, MongoDB 등)
 
-```bash
-# unit tests
-$ yarn run test
+#### 3. **애플리케이션 계층 (Application Layer)**
 
-# e2e tests
-$ yarn run test:e2e
+- **목적**: 도메인 계층의 비즈니스 로직을 조율하고 특정 "사용 사례"를 구현
+- **구성 요소**:
+  - **사용 사례(Use Cases)**: 애플리케이션의 구체적인 기능을 정의하고 도메인 객체를 사용하여 비즈니스 규칙을 적용
 
-# test coverage
-$ yarn run test:cov
-```
+#### 4. **도메인 계층 (Domain Layer)**
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ yarn install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- **목적**: 시스템의 핵심 비즈니스 로직과 규칙이 담긴 가장 중요한 계층
+- **구성 요소**:
+  - **엔티티(Entities)**: 비즈니스 객체와 데이터 구조를 정의
+  - **이벤트(Events)**: 도메인에서 발생하는 중요한 사건들을 나타냄
+  - **리포지토리(Repositories)**: 데이터 저장소에 대한 추상화된 인터페이스를 정의
+  - **서비스(Services)**: 도메인 로직을 캡슐화하고 엔티티 간의 상호작용을 조정
