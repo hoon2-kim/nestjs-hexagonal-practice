@@ -5,7 +5,7 @@ import { UpdateUserDto } from './dtos/update-user.dto';
 export class UpdateUserUseCase {
   constructor(private readonly repository: UserRepository) {}
 
-  async run(id: string, dto: UpdateUserDto): Promise<UserEntity> {
+  async run(id: number, dto: UpdateUserDto): Promise<UserEntity> {
     return await this.repository.updateUser(id, dto);
   }
 }
